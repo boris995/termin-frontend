@@ -3,9 +3,9 @@ import { Player } from '../types';
 
 const ratingKeys = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const;
 
-export const GoldPlayerCard = ({ player, large = false }: { player: Player; large?: boolean }) => (
+export const GoldPlayerCard = ({ player, large = false, className = '' }: { player: Player; large?: boolean; className?: string }) => (
   <div
-    className={`group relative mx-auto aspect-[2/3] w-full min-w-[132px] overflow-hidden shadow-2xl shadow-black/45 ${large ? 'max-w-[373px]' : 'max-w-[280px]'}`}
+    className={`group relative mx-auto aspect-[5/7] w-full min-w-[132px] overflow-hidden shadow-2xl shadow-black/45 ${large ? 'max-w-[373px]' : 'max-w-[280px]'} ${className}`}
     style={{
       clipPath: 'polygon(13% 10%, 22% 8%, 28% 0, 72% 0, 78% 8%, 87% 10%, 87% 88%, 50% 100%, 13% 88%)',
       borderRadius: '18px',

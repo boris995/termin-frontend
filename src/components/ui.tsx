@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { forwardRef, ReactNode } from 'react';
 
 export const Panel = ({ children, className = '' }: { children: ReactNode; className?: string }) => (
   <section className={`glass rounded-lg p-5 shadow-2xl shadow-black/20 ${className}`}>{children}</section>
@@ -27,16 +27,22 @@ export const Button = ({ children, className = '', ...props }: React.ButtonHTMLA
   </button>
 );
 
-export const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(({ className = '', ...props }, ref) => (
   <input
-    className="w-full rounded border border-white/10 bg-blue-950/80 px-3 py-2 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-orange-400"
+    ref={ref}
+    className={`w-full rounded border border-white/10 bg-blue-950/80 px-3 py-2 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-orange-400 ${className}`}
     {...props}
   />
-);
+));
 
-export const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
+Input.displayName = 'Input';
+
+export const Select = forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(({ className = '', ...props }, ref) => (
   <select
-    className="w-full rounded border border-white/10 bg-blue-950/80 px-3 py-2 text-sm text-white outline-none transition focus:border-orange-400"
+    ref={ref}
+    className={`w-full rounded border border-white/10 bg-blue-950/80 px-3 py-2 text-sm text-white outline-none transition focus:border-orange-400 ${className}`}
     {...props}
   />
-);
+));
+
+Select.displayName = 'Select';

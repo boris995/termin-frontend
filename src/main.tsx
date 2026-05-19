@@ -16,6 +16,7 @@ import { PublicPlayerDetail } from './pages/PublicPlayerDetail';
 import { PublicPlayers } from './pages/PublicPlayers';
 import { PublicMatchDetail } from './pages/PublicMatchDetail';
 import { PublicResults } from './pages/PublicResults';
+import { PublicSeasonDetail } from './pages/PublicSeasonDetail';
 import { PublicSeasons } from './pages/PublicSeasons';
 import { Seasons } from './pages/Seasons';
 import { Teams } from './pages/Teams';
@@ -29,6 +30,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/" element={<PublicLayout />}>
           <Route index element={<Home />} />
           <Route path="sezone" element={<PublicSeasons />} />
+          <Route path="sezone/:id" element={<PublicSeasonDetail />} />
+          <Route path="ekipe" element={<PublicSeasons />} />
           <Route path="rezultati" element={<PublicResults />} />
           <Route path="rezultati/:id" element={<PublicMatchDetail />} />
           <Route path="igraci" element={<PublicPlayers />} />

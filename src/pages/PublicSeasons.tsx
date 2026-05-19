@@ -1,5 +1,6 @@
 import { Flag, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, unwrap } from '../api/client';
 import { PageTitle, Panel, StatPill } from '../components/ui';
 import { fallbackSeason, fallbackTeams } from '../data/fallback';
@@ -67,14 +68,15 @@ export const PublicSeasons = () => {
             </div>
             <div className="space-y-3">
               {seasons.map((season) => (
-                <div key={season.id} className="rounded border border-white/10 bg-blue-950/70 p-4">
+                <Link key={season.id} to={`/sezone/${season.id}`} className="block rounded border border-white/10 bg-blue-950/70 p-4 transition hover:border-orange-300/50">
                   <div className="flex items-center justify-between">
                     <h3 className="font-black">{season.name}</h3>
                     <span className="rounded bg-white/10 px-2 py-1 text-xs font-bold">#{season.number}</span>
                   </div>
                   <p className="mt-2 text-sm text-slate-400">Igra se do {season.winsToWinSeason} pobjeda.</p>
                   <p className="mt-1 text-sm text-slate-400">Status: {season.status}</p>
-                </div>
+                  <p className="mt-3 text-sm font-black text-orange-300">Otvori sezonu</p>
+                </Link>
               ))}
             </div>
           </Panel>

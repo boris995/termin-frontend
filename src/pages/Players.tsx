@@ -34,6 +34,11 @@ export const Players = () => {
     await load();
   };
 
+  const toggleHomeCard = async (player: Player) => {
+    await api.put(`/players/${player.id}`, { showOnHome: !player.showOnHome });
+    await load();
+  };
+
   return (
     <>
       <PageTitle eyebrow="Roster" title="Igrači i statistika" />
@@ -48,6 +53,7 @@ export const Players = () => {
                 <th className="pb-3">Pozicija</th>
                 <th className="pb-3 text-right">Golovi</th>
                 <th className="pb-3 text-right">Asistencije</th>
+                <th className="pb-3 text-right">Home</th>
                 <th className="pb-3 text-right">Akcije</th>
               </tr>
             </thead>
@@ -64,6 +70,12 @@ export const Players = () => {
                   <td className="py-3 text-right font-black">{player.goals}</td>
                   <td className="py-3 text-right font-black">{player.assists}</td>
                   <td className="py-3 text-right">
+                    <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-300">
+                      <input type="checkbox" checked={!!player.showOnHome} onChange={() => toggleHomeCard(player)} />
+                      Kartica
+                    </label>
+                  </td>
+                  <td className="py-3 text-right">
                     <Link className="rounded bg-white/10 px-3 py-2 text-xs font-bold hover:bg-white/15" to={`/admin/players/${player.id}`}>
                       Uredi
                     </Link>
@@ -75,6 +87,11 @@ export const Players = () => {
         </Panel>
         <Panel>
           <h3 className="mb-4 text-lg font-black">Novi igrač</h3>
+          {!teams.length && (
+            <p className="mb-4 rounded border border-orange-300/30 bg-orange-500/10 px-3 py-2 text-sm text-orange-100">
+              Prvo dodaj ekipe za ovu sezonu, pa onda igrace.
+            </p>
+          )}
           <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
             <Input placeholder="Ime" {...register('firstName', { required: true })} />
             <Input placeholder="Prezime" {...register('lastName', { required: true })} />
@@ -90,7 +107,7 @@ export const Players = () => {
               ))}
             </Select>
             <Input type="number" min={1} placeholder="Broj dresa" {...register('shirtNumber')} />
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={!teams.length}>
               <Plus size={18} />
               Dodaj
             </Button>

@@ -10,8 +10,8 @@ import { Player } from '../types';
 import { setSeo } from '../utils/seo';
 
 const PlayerCard = ({ player }: { player: Player }) => (
-  <Link to={`/igraci/${player.id}`} className="block w-full max-w-[280px] transition hover:-translate-y-1">
-    <GoldPlayerCard player={player} />
+  <Link to={`/igraci/${player.id}`} className="block w-full max-w-[360px] transition hover:-translate-y-1">
+    <GoldPlayerCard player={player} className="max-w-[360px]" />
   </Link>
 );
 
@@ -50,7 +50,7 @@ export const PublicPlayers = () => {
           <SeasonSelector value={seasonId} onChange={setSeasonId} />
         </header>
 
-        <div className="mb-8 grid grid-cols-2 justify-items-center gap-3 sm:gap-4 xl:grid-cols-4">
+        <div className="mb-8 grid grid-cols-2 justify-items-center gap-3 sm:gap-5 lg:grid-cols-3 xl:gap-6">
           {filteredPlayers.map((player) => (
             <PlayerCard key={player.id} player={player} />
           ))}

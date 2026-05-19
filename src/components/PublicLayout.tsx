@@ -1,4 +1,4 @@
-import { CalendarClock, Home, ListOrdered, Newspaper, Trophy, Users } from 'lucide-react';
+import { BarChart3, CalendarClock, Home, ListOrdered, LogIn, Newspaper, Trophy, Users } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 
 const links = [
@@ -22,23 +22,32 @@ export const PublicLayout = () => (
             <h1 className="text-lg font-black text-white">Duel Liga</h1>
           </div>
         </NavLink>
-        <nav className="flex gap-2 overflow-x-auto pb-1 lg:pb-0">
-          {links.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className={({ isActive }) =>
-                `inline-flex shrink-0 items-center gap-2 rounded px-3 py-2 text-sm font-bold transition ${
-                  isActive ? 'bg-orange-500 text-blue-950' : 'text-slate-300 hover:bg-white/10 hover:text-white'
-                }`
-              }
-            >
-              <Icon size={17} />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <nav className="flex gap-2 overflow-x-auto pb-1 lg:pb-0">
+            {links.map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === '/'}
+                className={({ isActive }) =>
+                  `inline-flex shrink-0 items-center gap-2 rounded px-3 py-2 text-sm font-bold transition ${
+                    isActive ? 'bg-orange-500 text-blue-950' : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                  }`
+                }
+              >
+                <Icon size={17} />
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+          <NavLink
+            to={localStorage.getItem('token') ? '/dashboard' : '/login'}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded bg-orange-500 px-4 py-2 text-sm font-black text-blue-950 transition hover:bg-orange-400"
+          >
+            {localStorage.getItem('token') ? <BarChart3 size={17} /> : <LogIn size={17} />}
+            {localStorage.getItem('token') ? 'Dashboard' : 'Admin login'}
+          </NavLink>
+        </div>
       </div>
     </header>
     <Outlet />

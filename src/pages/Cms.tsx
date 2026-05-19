@@ -1,9 +1,10 @@
-import { CalendarPlus, FilePlus, Pencil, Trash2 } from 'lucide-react';
+import { CalendarPlus, FilePlus, Pencil, Play, Square, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { api, unwrap } from '../api/client';
 import { Button, Input, PageTitle, Panel, Select } from '../components/ui';
-import { CmsBlock, NextMatch, Team } from '../types';
+import { CmsBlock, NextMatch, Player, Team } from '../types';
+import { formatDateTime } from '../utils/date';
 
 interface BlockForm {
   title: string;
@@ -26,20 +27,24 @@ export const Cms = () => {
   const [blocks, setBlocks] = useState<CmsBlock[]>([]);
   const [nextMatches, setNextMatches] = useState<NextMatch[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [editingBlock, setEditingBlock] = useState<CmsBlock | null>(null);
   const [error, setError] = useState('');
+  const [finishForms, setFinishForms] = useState<Record<number, { homeScore: number; awayScore: number; votingEnabled: boolean; participants: number[]; stats: Record<number, { goals: number; assists: number }> }>>({});
   const blockForm = useForm<BlockForm>({ defaultValues: { title: '', body: '', type: 'news', imageUrl: '', sortOrder: 0 } });
   const nextForm = useForm<NextMatchForm>({ defaultValues: { seasonId: 1, homeTeamId: 0, awayTeamId: 0, scheduledAt: '', venue: '', note: '' } });
 
   const load = async () => {
-    const [cmsBlocks, scheduled, seasonTeams] = await Promise.all([
+    const [cmsBlocks, scheduled, seasonTeams, seasonPlayers] = await Promise.all([
       api.get('/cms/blocks').then(unwrap<CmsBlock[]>),
       api.get('/cms/next-matches').then(unwrap<NextMatch[]>),
-      api.get('/seasons/1/teams').then(unwrap<Team[]>)
+      api.get('/seasons/1/teams').then(unwrap<Team[]>),
+      api.get('/seasons/1/players').then(unwrap<Player[]>)
     ]);
     setBlocks(cmsBlocks);
     setNextMatches(scheduled);
     setTeams(seasonTeams);
+    setPlayers(seasonPlayers);
   };
 
   useEffect(() => {
@@ -92,6 +97,54 @@ export const Cms = () => {
 
   const cancelNextMatch = async (match: NextMatch) => {
     await api.put(`/cms/next-matches/${match.id}`, { status: 'cancelled' });
+    await load();
+  };
+
+  const startNextMatch = async (match: NextMatch) => {
+    await api.post(`/cms/next-matches/${match.id}/start`);
+    await load();
+  };
+
+  const updateFinishForm = (matchId: number, patch: Partial<{ homeScore: number; awayScore: number; votingEnabled: boolean; participants: number[]; stats: Record<number, { goals: number; assists: number }> }>) => {
+    setFinishForms((current) => ({
+      ...current,
+      [matchId]: {
+        homeScore: current[matchId]?.homeScore || 0,
+        awayScore: current[matchId]?.awayScore || 0,
+        votingEnabled: current[matchId]?.votingEnabled ?? true,
+        participants: current[matchId]?.participants || [],
+        stats: current[matchId]?.stats || {},
+        ...patch
+      }
+    }));
+  };
+
+  const toggleParticipant = (match: NextMatch, player: Player) => {
+    const form = finishForms[match.id] || { homeScore: 0, awayScore: 0, votingEnabled: true, participants: [], stats: {} };
+    const exists = form.participants.includes(player.id);
+    updateFinishForm(match.id, {
+      participants: exists ? form.participants.filter((id) => id !== player.id) : [...form.participants, player.id],
+      stats: { ...form.stats, [player.id]: form.stats[player.id] || { goals: 0, assists: 0 } }
+    });
+  };
+
+  const finishNextMatch = async (match: NextMatch) => {
+    const form = finishForms[match.id] || { homeScore: 0, awayScore: 0, votingEnabled: true, participants: [], stats: {} };
+    const playerStats = form.participants.map((playerId) => {
+      const player = players.find((item) => item.id === playerId);
+      return {
+        playerId,
+        teamId: player?.teamId,
+        goals: Number(form.stats[playerId]?.goals || 0),
+        assists: Number(form.stats[playerId]?.assists || 0)
+      };
+    });
+    await api.post(`/cms/next-matches/${match.id}/finish`, {
+      homeScore: Number(form.homeScore || 0),
+      awayScore: Number(form.awayScore || 0),
+      votingEnabled: form.votingEnabled,
+      playerStats
+    });
     await load();
   };
 
@@ -200,16 +253,114 @@ export const Cms = () => {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h4 className="font-black">{match.homeTeam?.shortName} vs {match.awayTeam?.shortName}</h4>
-                    <p className="mt-2 text-sm text-slate-400">{new Date(match.scheduledAt).toLocaleString('bs-BA')}</p>
+                    <p className="mt-2 text-sm text-slate-400">{formatDateTime(match.scheduledAt)}</p>
                     {match.venue && <p className="text-sm text-slate-400">{match.venue}</p>}
                     <p className="mt-1 text-xs uppercase tracking-widest text-orange-300">{match.status}</p>
                   </div>
                   {match.status !== 'cancelled' && (
-                    <button className="rounded bg-white/10 px-3 py-2 text-xs font-bold hover:bg-white/15" onClick={() => cancelNextMatch(match)}>
-                      Otkazi
-                    </button>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {match.status === 'scheduled' && (
+                        <button className="inline-flex items-center gap-2 rounded bg-orange-500 px-3 py-2 text-xs font-black text-blue-950 hover:bg-orange-400" onClick={() => startNextMatch(match)}>
+                          <Play size={14} />
+                          Pokreni sada
+                        </button>
+                      )}
+                      <button className="rounded bg-white/10 px-3 py-2 text-xs font-bold hover:bg-white/15" onClick={() => cancelNextMatch(match)}>
+                        Otkazi
+                      </button>
+                    </div>
                   )}
                 </div>
+                {match.status === 'live' && (
+                  <div className="mt-4 border-t border-white/10 pt-4">
+                    <div className="mb-3 flex items-center gap-2 text-orange-300">
+                      <Square size={16} />
+                      <h5 className="font-black">Zavrsi mec i objavi rezultat</h5>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        placeholder={`${match.homeTeam?.shortName} golovi`}
+                        value={finishForms[match.id]?.homeScore ?? 0}
+                        onChange={(event) => updateFinishForm(match.id, { homeScore: Number(event.target.value) })}
+                      />
+                      <Input
+                        type="number"
+                        min={0}
+                        placeholder={`${match.awayTeam?.shortName} golovi`}
+                        value={finishForms[match.id]?.awayScore ?? 0}
+                        onChange={(event) => updateFinishForm(match.id, { awayScore: Number(event.target.value) })}
+                      />
+                    </div>
+                    <label className="mt-3 flex items-center gap-2 rounded border border-white/10 bg-slate-950/40 px-3 py-2 text-sm font-bold text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={finishForms[match.id]?.votingEnabled ?? true}
+                        onChange={(event) => updateFinishForm(match.id, { votingEnabled: event.target.checked })}
+                      />
+                      Dozvoli glasanje publike
+                    </label>
+                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                      {[match.homeTeam, match.awayTeam].map((team) => (
+                        <div key={team.id} className="rounded border border-white/10 bg-slate-950/40 p-3">
+                          <h6 className="mb-3 text-sm font-black text-white">{team.name}</h6>
+                          <div className="space-y-3">
+                            {players.filter((player) => player.teamId === team.id).map((player) => {
+                              const selected = finishForms[match.id]?.participants.includes(player.id) || false;
+                              return (
+                                <div key={player.id} className="rounded bg-white/5 p-3">
+                                  <label className="flex items-center gap-2 text-sm font-bold">
+                                    <input type="checkbox" checked={selected} onChange={() => toggleParticipant(match, player)} />
+                                    {player.firstName} {player.lastName}
+                                  </label>
+                                  {selected && (
+                                    <div className="mt-2 grid grid-cols-2 gap-2">
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        placeholder="Golovi"
+                                        value={finishForms[match.id]?.stats[player.id]?.goals ?? 0}
+                                        onChange={(event) =>
+                                          updateFinishForm(match.id, {
+                                            stats: {
+                                              ...(finishForms[match.id]?.stats || {}),
+                                              [player.id]: { ...(finishForms[match.id]?.stats[player.id] || { assists: 0 }), goals: Number(event.target.value) }
+                                            }
+                                          })
+                                        }
+                                      />
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        placeholder="Asistencije"
+                                        value={finishForms[match.id]?.stats[player.id]?.assists ?? 0}
+                                        onChange={(event) =>
+                                          updateFinishForm(match.id, {
+                                            stats: {
+                                              ...(finishForms[match.id]?.stats || {}),
+                                              [player.id]: { ...(finishForms[match.id]?.stats[player.id] || { goals: 0 }), assists: Number(event.target.value) }
+                                            }
+                                          })
+                                        }
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <Button type="button" className="mt-4 w-full" onClick={() => finishNextMatch(match)} disabled={!finishForms[match.id]?.participants.length}>
+                      Objavi zavrseni mec
+                    </Button>
+                  </div>
+                )}
+                {match.status === 'completed' && match.matchId && (
+                  <p className="mt-3 text-sm text-slate-300">Objavljeno kao Matchday {match.match?.matchNumber || match.matchId}.</p>
+                )}
               </div>
             ))}
           </div>
