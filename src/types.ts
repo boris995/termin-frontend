@@ -6,7 +6,7 @@ export interface Season {
   status: 'active' | 'completed';
   winnerTeamId?: number | null;
   winnerTeam?: Team | null;
-}
+} 
 
 export interface Team {
   id: number;
